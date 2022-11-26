@@ -304,7 +304,7 @@ class TimeRangePickerState extends State<TimeRangePicker>
     _offsetRad = (widget.clockRotation * pi / 180);
 
     WidgetsBinding.instance.addObserver(this);
-    setAngles();
+    setAngles(widget.start, widget.end);
     WidgetsBinding.instance.addPostFrameCallback((_) => setRadius());
 
     super.initState();
@@ -333,10 +333,10 @@ class TimeRangePickerState extends State<TimeRangePicker>
     }
   }
 
-  void setAngles() {
+  void setAngles(TimeOfDay? start, TimeOfDay? end) {
     setState(() {
-      var startTime = widget.start ?? TimeOfDay.now();
-      var endTime = widget.end ??
+      var startTime = start ?? TimeOfDay.now();
+      var endTime = end ??
           startTime.replacing(
               hour: startTime.hour < 21
                   ? startTime.hour + 3
@@ -763,13 +763,57 @@ class TimeRangePickerState extends State<TimeRangePicker>
         direction: landscape ? Axis.vertical : Axis.horizontal,
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          Column(
-            children: [
-              Text(widget.fromText, style: TextStyle(color: activeColor)),
+          InkWell(
+            onTap: () async {
+              final time = await showTimePicker(
+                context: context,
+                initialTime: _startTime,
+                initialEntryMode: TimePickerEntryMode.inputOnly,
+              );
+
+              if (time != null) {
+                setAngles(time, _endTime);
+              }
+            },
+            child: Column(
+              children: [
+                Text(widget.fromText, style: TextStyle(color: activeColor)),
+                Text(
+                  MaterialLocalizations.of(context).formatTimeOfDay(_startTime,
+                      alwaysUse24HourFormat: widget.use24HourFormat),
+                  style: _activeTime == ActiveTime.Start
+                      ? widget.activeTimeTextStyle ??
+                          TextStyle(
+                              color: activeColor,
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold)
+                      : widget.timeTextStyle ??
+                          TextStyle(
+                              color: inactiveColor,
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+          InkWell(
+            onTap: () async {
+              final time = await showTimePicker(
+                context: context,
+                initialTime: _endTime,
+                initialEntryMode: TimePickerEntryMode.inputOnly,
+              );
+
+              if (time != null) {
+                setAngles(_startTime, time);
+              }
+            },
+            child: Column(children: [
+              Text(widget.toText, style: TextStyle(color: activeColor)),
               Text(
-                MaterialLocalizations.of(context).formatTimeOfDay(_startTime,
+                MaterialLocalizations.of(context).formatTimeOfDay(_endTime,
                     alwaysUse24HourFormat: widget.use24HourFormat),
-                style: _activeTime == ActiveTime.Start
+                style: _activeTime == ActiveTime.End
                     ? widget.activeTimeTextStyle ??
                         TextStyle(
                             color: activeColor,
@@ -781,26 +825,8 @@ class TimeRangePickerState extends State<TimeRangePicker>
                             fontSize: 28,
                             fontWeight: FontWeight.bold),
               ),
-            ],
-          ),
-          Column(children: [
-            Text(widget.toText, style: TextStyle(color: activeColor)),
-            Text(
-              MaterialLocalizations.of(context).formatTimeOfDay(_endTime,
-                  alwaysUse24HourFormat: widget.use24HourFormat),
-              style: _activeTime == ActiveTime.End
-                  ? widget.activeTimeTextStyle ??
-                      TextStyle(
-                          color: activeColor,
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold)
-                  : widget.timeTextStyle ??
-                      TextStyle(
-                          color: inactiveColor,
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold),
-            ),
-          ])
+            ]),
+          )
         ],
       ),
     );
